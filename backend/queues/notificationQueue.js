@@ -1,25 +1,35 @@
 import Bull from 'bull';
+import Redis from 'ioredis';
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const client = new Redis(process.env.REDIS_URL, {
+  maxRetriesPerRequest: null,
+  tls: {}
+});
+
+const redisConfig = {
+  createClient: () => client
+};
 
 /**
  * Main notification queue for discrepancy alerts
  */
-export const notificationQueue = new Bull('notification-queue', REDIS_URL, {
+export const notificationQueue = new Bull('notification-queue', {
+  redis: redisConfig,
   defaultJobOptions: {
     attempts: 3,
     backoff: {
       type: 'custom'
     },
     removeOnComplete: 100, // Keep last 100 completed jobs
-    removeOnFail: 500 // Keep last 500 failed jobs for debugging
+    removeOnFail: 500      // Keep last 500 failed jobs for debugging
   }
 });
 
 /**
  * Dead letter queue for permanently failed notifications
  */
-export const deadLetterQueue = new Bull('notification-dead-letter', REDIS_URL, {
+export const deadLetterQueue = new Bull('notification-dead-letter', {
+  redis: redisConfig,
   defaultJobOptions: {
     removeOnComplete: false // Keep all dead letter jobs for manual review
   }
