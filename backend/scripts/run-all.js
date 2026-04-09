@@ -16,8 +16,8 @@ function startProcess(name, command, args) {
   return child;
 }
 
-const server = startProcess('server', 'nodemon', ['server.js']);
-const worker = startProcess('worker', 'nodemon', ['workers/notificationWorker.js']);
+const server = startProcess('server', 'node', ['server.js']);
+const worker = startProcess('worker', 'node', ['workers/notificationWorker.js']);
 
 function shutdown() {
   if (!server.killed) {
