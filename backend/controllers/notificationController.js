@@ -1,5 +1,4 @@
 import { Notification } from '../models/index.js';
-import { getQueueStats } from '../queues/notificationQueue.js';
 import { successResponse, errorResponse } from '../utils/response.js';
 
 /**
@@ -16,19 +15,17 @@ export async function listNotifications(req, res) {
       query.status = status;
     }
 
-    const [notifications, total, queueStats] = await Promise.all([
+    const [notifications, total] = await Promise.all([
       Notification.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit))
         .lean(),
-      Notification.countDocuments(query),
-      getQueueStats()
+      Notification.countDocuments(query)
     ]);
 
     return successResponse(res, {
       notifications,
-      queueStats,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -65,22 +62,7 @@ export async function getNotificationById(req, res) {
   }
 }
 
-/**
- * Get queue statistics
- * GET /api/notifications/queue-stats
- */
-export async function getQueueStatsEndpoint(req, res) {
-  try {
-    const stats = await getQueueStats();
-    return successResponse(res, { stats }, 'Queue stats retrieved');
-  } catch (err) {
-    console.error('[NotificationController] Queue stats error:', err);
-    return errorResponse(res, 'Failed to retrieve queue stats', 500);
-  }
-}
-
 export default {
   listNotifications,
-  getNotificationById,
-  getQueueStatsEndpoint
+  getNotificationById
 };
