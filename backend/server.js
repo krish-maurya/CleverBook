@@ -9,6 +9,15 @@ const app = express();
 const PORT = process.env.PORT || 5252;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/cleverbooks';
 
+function getAllowedOrigins() {
+  const configuredOrigins = (process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  return new Set([...configuredOrigins, 'http://localhost:3000']);
+}
+
 console.log("Connected to DB:", MONGO_URI);
 
 // Middleware
@@ -17,9 +26,17 @@ app.use(express.urlencoded({ extended: true }));
 
 // Allow frontend app to call backend APIs from the browser.
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
+  const origin = req.headers.origin;
+  const allowedOrigins = getAllowedOrigins();
+
+  if (!origin || allowedOrigins.has(origin)) {
+    res.header('Access-Control-Allow-Origin', origin || 'http://localhost:3000');
+  }
+
+  res.header('Vary', 'Origin');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
 
   if (req.method === 'OPTIONS') {
     return res.sendStatus(204);

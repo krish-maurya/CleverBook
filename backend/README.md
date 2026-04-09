@@ -78,9 +78,12 @@ pnpm run reset:db
 | MONGO_URI | MongoDB connection string | mongodb://localhost:27017/cleverbooks |
 | REDIS_URL | Redis connection string | redis://localhost:6379 |
 | WEBHOOK_URL | Notification webhook URL | https://webhook.site/test |
+| FRONTEND_URL | Allowed browser origin for the frontend | http://localhost:3000 |
 | CRON_SCHEDULE | Reconciliation schedule (cron) | 0 2 * * * (2 AM) |
 | RATE_LIMIT_WINDOW_MS | Rate limit window | 60000 |
 | RATE_LIMIT_MAX | Max requests per window | 5 |
+
+Set `FRONTEND_URL` to your deployed frontend domain when the frontend and backend are hosted separately. You can also provide a comma-separated list if you need to allow more than one origin.
 
 ## API Endpoints
 
