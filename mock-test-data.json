@@ -1,0 +1,116 @@
+{
+  "orders": [
+    {
+      "awbNumber": "AWB001",
+      "merchantId": "M-12345",
+      "courierPartner": "delhivery",
+      "orderStatus": "DELIVERED",
+      "codAmount": 5000,
+      "declaredWeight": 1.5,
+      "orderDate": "2026-04-01T10:00:00Z",
+      "deliveryDate": "2026-04-05T14:30:00Z"
+    },
+    {
+      "awbNumber": "AWB002",
+      "merchantId": "M-12345",
+      "courierPartner": "bluedart",
+      "orderStatus": "DELIVERED",
+      "codAmount": 3500,
+      "declaredWeight": 1.0,
+      "orderDate": "2026-04-02T11:00:00Z",
+      "deliveryDate": "2026-04-06T09:15:00Z"
+    },
+    {
+      "awbNumber": "AWB003",
+      "merchantId": "M-67890",
+      "courierPartner": "shiprocket",
+      "orderStatus": "RTO",
+      "codAmount": 2000,
+      "declaredWeight": 0.8,
+      "orderDate": "2026-03-28T09:30:00Z",
+      "deliveryDate": "2026-04-02T16:45:00Z"
+    },
+    {
+      "awbNumber": "AWB004",
+      "merchantId": "M-12345",
+      "courierPartner": "dtdc",
+      "orderStatus": "IN_TRANSIT",
+      "codAmount": 4200,
+      "declaredWeight": 2.0,
+      "orderDate": "2026-04-07T13:00:00Z",
+      "deliveryDate": null
+    },
+    {
+      "awbNumber": "AWB005",
+      "merchantId": "M-67890",
+      "courierPartner": "delhivery",
+      "orderStatus": "DELIVERED",
+      "codAmount": 1500,
+      "declaredWeight": 0.5,
+      "orderDate": "2026-03-30T15:20:00Z",
+      "deliveryDate": "2026-04-03T11:00:00Z"
+    }
+  ],
+  "settlements": [
+    {
+      "awbNumber": "AWB001",
+      "settledCodAmount": 4800,
+      "chargedWeight": 1.8,
+      "forwardCharge": 120,
+      "rtoCharge": 0,
+      "codHandlingFee": 50,
+      "settlementDate": "2026-04-06T00:00:00Z",
+      "batchId": "BATCH-001",
+      "status": "DISCREPANCY",
+      "discrepancyType": ["COD_SHORT_REMITTANCE"]
+    },
+    {
+      "awbNumber": "AWB002",
+      "settledCodAmount": 3500,
+      "chargedWeight": 1.0,
+      "forwardCharge": 80,
+      "rtoCharge": 0,
+      "codHandlingFee": 35,
+      "settlementDate": "2026-04-07T00:00:00Z",
+      "batchId": "BATCH-001",
+      "status": "MATCHED",
+      "discrepancyType": []
+    },
+    {
+      "awbNumber": "AWB003",
+      "settledCodAmount": 0,
+      "chargedWeight": 0.8,
+      "forwardCharge": 60,
+      "rtoCharge": 150,
+      "codHandlingFee": 20,
+      "settlementDate": "2026-04-04T00:00:00Z",
+      "batchId": "BATCH-001",
+      "status": "DISCREPANCY",
+      "discrepancyType": ["PHANTOM_RTO_CHARGE"]
+    },
+    {
+      "awbNumber": "AWB004",
+      "settledCodAmount": 4200,
+      "chargedWeight": 2.2,
+      "forwardCharge": 140,
+      "rtoCharge": 0,
+      "codHandlingFee": 45,
+      "settlementDate": null,
+      "batchId": "BATCH-001",
+      "status": "PENDING_REVIEW",
+      "discrepancyType": ["WEIGHT_DISPUTE"]
+    },
+    {
+      "awbNumber": "AWB005",
+      "settledCodAmount": 1500,
+      "chargedWeight": 0.5,
+      "forwardCharge": 40,
+      "rtoCharge": 0,
+      "codHandlingFee": 15,
+      "settlementDate": "2026-04-04T00:00:00Z",
+      "batchId": "BATCH-001",
+      "status": "MATCHED",
+      "discrepancyType": []
+    }
+  ]
+}

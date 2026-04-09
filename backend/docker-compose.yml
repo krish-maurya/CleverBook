@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # Node.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/cleverbooks
+      - REDIS_URL=redis://redis:6379
+      - WEBHOOK_URL=${WEBHOOK_URL:-https://webhook.site/test}
+      - CRON_SCHEDULE=0 2 * * *
+      - RATE_LIMIT_WINDOW_MS=60000
+      - RATE_LIMIT_MAX=5
+      - TZ=Asia/Kolkata
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - cleverbooks-network
+    restart: unless-stopped
+
+  # Notification Worker
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: node workers/notificationWorker.js
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/cleverbooks
+      - REDIS_URL=redis://redis:6379
+      - WEBHOOK_URL=${WEBHOOK_URL:-https://webhook.site/test}
+      - TZ=Asia/Kolkata
+    depends_on:
+      - mongodb
+      - redis
+      - app
+    networks:
+      - cleverbooks-network
+    restart: unless-stopped
+
+  # MongoDB
+  mongodb:
+    image: mongo:7.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - cleverbooks-network
+    restart: unless-stopped
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cleverbooks-network
+    restart: unless-stopped
+
+  # Redis Commander (optional - for debugging)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - cleverbooks-network
+    profiles:
+      - debug
+
+  # Mongo Express (optional - for debugging)
+  mongo-express:
+    image: mongo-express:latest
+    ports:
+      - "8082:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin
+    depends_on:
+      - mongodb
+    networks:
+      - cleverbooks-network
+    profiles:
+      - debug
+
+networks:
+  cleverbooks-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  redis_data:
