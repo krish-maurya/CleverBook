@@ -21,7 +21,7 @@ ENV TZ=Asia/Kolkata
 RUN apk add --no-cache tzdata
 
 # Expose port
-EXPOSE 5000
+EXPOSE 5252
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
