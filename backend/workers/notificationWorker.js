@@ -2,12 +2,9 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 import { notificationQueue, deadLetterQueue } from '../queues/notificationQueue.js';
 import Notification from '../models/Notification.js';
+import { sendWebhook } from '../services/notificationDeliveryService.js';
 
-const WEBHOOK_URL = process.env.WEBHOOK_URL || 'https://webhook.site/d8c272b7-4b88-4aa4-9b05-fc23c0d836d9';
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/cleverbooks';
-
-// Retry delays in milliseconds: 5s, 30s, 120s
-const RETRY_DELAYS = [5000, 30000, 120000];
 
 /**
  * Connect to MongoDB
@@ -20,37 +17,6 @@ async function connectDB() {
     console.error('[NotificationWorker] MongoDB connection error:', err);
     process.exit(1);
   }
-}
-
-/**
- * Send webhook notification
- */
-async function sendWebhook(payload) {
-  console.log(`[NotificationWorker] Sending webhook for AWB ${payload.awbNumber}`);
-  
-  const response = await fetch(WEBHOOK_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Idempotency-Key': payload.idempotencyKey
-    },
-    body: JSON.stringify({
-      merchantId: payload.merchantId,
-      awbNumber: payload.awbNumber,
-      discrepancyType: payload.discrepancyType,
-      expectedValue: payload.expectedValue,
-      actualValue: payload.actualValue,
-      suggestedAction: payload.suggestedAction,
-      timestamp: new Date().toISOString()
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Webhook failed with status ${response.status}: ${response.statusText}`);
-  }
-
-  const responseData = await response.text();
-  return { status: response.status, data: responseData };
 }
 
 /**
@@ -164,7 +130,7 @@ process.on('SIGINT', shutdown);
  */
 async function start() {
   console.log('[NotificationWorker] Starting notification worker...');
-  console.log(`[NotificationWorker] Webhook URL: ${WEBHOOK_URL}`);
+  console.log(`[NotificationWorker] Webhook URL: ${process.env.WEBHOOK_URL || 'https://webhook.site/d8c272b7-4b88-4aa4-9b05-fc23c0d836d9'}`);
   
   await connectDB();
   

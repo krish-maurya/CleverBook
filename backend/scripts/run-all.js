@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 function startProcess(name, command, args) {
   const child = spawn(command, args, {
     stdio: 'inherit',
-    shell: true
+    shell: false
   });
 
   child.on('exit', (code) => {

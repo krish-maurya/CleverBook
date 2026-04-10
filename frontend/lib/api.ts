@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5252/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -246,10 +246,10 @@ export const getStats = async () => {
     })),
     lastJobStatus: data.recentJobs[0]
       ? {
-          status: data.recentJobs[0].status,
-          runTime: data.recentJobs[0].runAt,
-          recordsProcessed: data.recentJobs[0].totalProcessed,
-        }
+        status: data.recentJobs[0].status,
+        runTime: data.recentJobs[0].runAt,
+        recordsProcessed: data.recentJobs[0].totalProcessed,
+      }
       : undefined,
   } satisfies Stats
 }

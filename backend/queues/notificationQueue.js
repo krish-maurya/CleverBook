@@ -1,55 +1,128 @@
 import Bull from 'bull';
-import Redis from 'ioredis';
 
 let notificationQueue = null;
 let deadLetterQueue = null;
 
-try {
-  const client = new Redis(process.env.REDIS_URL, {
+/**
+ * Build Redis config safely
+ */
+function buildRedisConfig() {
+  const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+  const url = new URL(redisUrl);
+
+  return {
+    host: url.hostname,
+    port: Number(url.port || 6379),
+    password: url.password || undefined,
+    username: url.username || undefined,
+
+    // ✅ TLS fix for cloud Redis
+    tls: redisUrl.startsWith('rediss://')
+      ? { rejectUnauthorized: false }
+      : undefined,
+
+    // ✅ Important for timeout issues
+    connectTimeout: 10000,
     maxRetriesPerRequest: null,
-    tls: {},           // Use TLS for services like Upstash
-    lazyConnect: true, // Don't connect immediately
+    enableReadyCheck: false
+  };
+}
+
+try {
+  const redisConfig = buildRedisConfig();
+
+  console.log('[Queue] Connecting to Redis:', {
+    host: redisConfig.host,
+    port: redisConfig.port,
+    tls: !!redisConfig.tls
   });
 
-  const redisConfig = { createClient: () => client };
-
-  // Main notification queue
+  /**
+   * Main notification queue
+   */
   notificationQueue = new Bull('notification-queue', {
     redis: redisConfig,
+
+    limiter: {
+    max: 5,        // max jobs
+    duration: 1000 // per 1 second
+  },
+
+    settings: {
+      stalledInterval: 30000,
+      lockDuration: 60000,
+      maxStalledCount: 1
+    },
+
     defaultJobOptions: {
       attempts: 3,
-      backoff: { type: 'custom' },
+      backoff: {
+        type: 'fixed',
+        delay: Number(process.env.NOTIFICATION_RETRY_DELAY_MS || 5000)
+      },
       removeOnComplete: 100,
       removeOnFail: 500
     }
   });
 
-  // Dead letter queue
+  /**
+   * Dead letter queue
+   */
   deadLetterQueue = new Bull('notification-dead-letter', {
     redis: redisConfig,
-    defaultJobOptions: { removeOnComplete: false }
+    defaultJobOptions: {
+      removeOnComplete: false
+    }
   });
 
-  // Failed job handling + dead-letter
+  /**
+   * 🔥 Connection Logs (VERY IMPORTANT)
+   */
+  notificationQueue.on('ready', () => {
+    console.log('[NotificationQueue] Redis connection ready');
+  });
+
+  notificationQueue.on('error', (err) => {
+    console.error('[NotificationQueue] Redis error:', err.message);
+  });
+
+  notificationQueue.on('waiting', (jobId) => {
+    console.log('[NotificationQueue] Job waiting:', jobId);
+  });
+
+  notificationQueue.on('active', (job) => {
+    console.log(`[NotificationQueue] Job ${job.id} started`);
+  });
+
+  notificationQueue.on('completed', (job) => {
+    console.log(`[NotificationQueue] Job ${job.id} completed`);
+  });
+
+  /**
+   * 🔥 Failed job + Dead Letter Logic
+   */
   notificationQueue.on('failed', async (job, err) => {
-    const delays = [5000, 30000, 120000];
-    const attemptIndex = job.attemptsMade - 1;
-
-    if (attemptIndex < delays.length - 1) {
-      job.opts.backoff = { delay: delays[attemptIndex + 1] };
-    }
-
-    console.log(`[NotificationQueue] Job ${job.id} failed attempt ${job.attemptsMade}:`, err.message);
+    console.error(
+      `[NotificationQueue] Job ${job.id} failed (Attempt ${job.attemptsMade}):`,
+      err.message
+    );
 
     if (job.attemptsMade >= 3 && deadLetterQueue) {
-      await deadLetterQueue.add('dead-letter', {
-        originalJobId: job.id,
-        data: job.data,
-        error: err.message,
-        failedAt: new Date().toISOString(),
-        attempts: job.attemptsMade
-      });
-      console.log(`[NotificationQueue] Job ${job.id} moved to dead letter queue`);
+      try {
+        await deadLetterQueue.add('dead-letter', {
+          originalJobId: job.id,
+          data: job.data,
+          error: err.message,
+          failedAt: new Date().toISOString(),
+          attempts: job.attemptsMade
+        });
+
+        console.log(
+          `[NotificationQueue] Job ${job.id} moved to dead letter queue`
+        );
+      } catch (dlqErr) {
+        console.error('[DeadLetterQueue] Failed:', dlqErr.message);
+      }
     }
   });
 
@@ -57,20 +130,40 @@ try {
   console.error('[Queue] Failed to initialize Redis queues:', err.message);
 }
 
-// Add job to queue
+/**
+ * 🔥 Safe Add Job (with timeout + retry protection)
+ */
 export async function addNotificationJob(data) {
   if (!notificationQueue) {
-    console.warn('[NotificationQueue] Queue not initialized, job skipped');
-    return null;
+    throw new Error('Notification queue is not initialized');
   }
 
-  const job = await notificationQueue.add('send-notification', data, {
-    backoff: { type: 'custom', delay: 5000 }
-  });
+  try {
+    const job = await Promise.race([
+      notificationQueue.add('send-notification', data),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Queue add timeout')), 10000)
+      )
+    ]);
 
-  console.log(`[NotificationQueue] Added job ${job.id} for AWB ${data.awbNumber}`);
-  return job;
+    console.log(
+      `[NotificationQueue] Added job ${job.id} for AWB ${data.awbNumber}`
+    );
+
+    return job;
+
+  } catch (err) {
+    console.error(
+      `[NotificationQueue] Failed to enqueue AWB ${data.awbNumber}:`,
+      err.message
+    );
+
+    // Optional: fallback logic here (DB / log / retry)
+    return null;
+  }
 }
+
+
 
 export { notificationQueue, deadLetterQueue };
 
