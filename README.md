@@ -101,7 +101,6 @@ If you prefer containerized setup, see [backend/README.md](backend/README.md) fo
 - Make discrepancy rules configurable via admin settings instead of code constants.
 - Add stronger file validation and richer error UX for malformed CSV/JSON rows.
 - Introduce CI pipeline checks (lint, typecheck, tests) and release automation.
-- Add deployment manifests (Docker Compose profiles or Kubernetes) and production runbooks.
 
 
 ## Project Layout
