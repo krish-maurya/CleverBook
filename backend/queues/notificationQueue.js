@@ -57,7 +57,7 @@ try {
     defaultJobOptions: {
       attempts: 3,
       backoff: {
-        type: 'fixed',
+        type: 'exponential',
         delay: Number(process.env.NOTIFICATION_RETRY_DELAY_MS || 5000)
       },
       removeOnComplete: 100,
