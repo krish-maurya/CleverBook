@@ -8,8 +8,14 @@ import { startScheduledReconciliation } from './jobs/scheduledReconciliation.js'
 const app = express();
 const PORT = process.env.PORT || 5252;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/cleverbooks';
+const isTrustProxyEnabled =
+  process.env.TRUST_PROXY === 'true' ||
+  process.env.TRUST_PROXY === '1' ||
+  process.env.NODE_ENV === 'production';
 
-console.log("Connected to DB:", MONGO_URI);
+if (isTrustProxyEnabled) {
+  app.set('trust proxy', 1);
+}
 
 // Middleware
 app.use(express.json());

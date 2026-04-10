@@ -72,6 +72,8 @@ export async function addNotificationJob(data) {
   return job;
 }
 
+export { notificationQueue, deadLetterQueue };
+
 export default {
   notificationQueue,
   deadLetterQueue,
